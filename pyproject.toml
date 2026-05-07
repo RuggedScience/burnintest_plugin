@@ -1,0 +1,20 @@
+[project]
+dynamic = ["version"]
+name = "burnintest-plugin"
+description = "Python bindings for PassMark's BurnInTest plugin interface"
+authors = [
+    { name = "Timothy Lassiter", email = "tim.lassiter@ruggedscience.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    
+]
+dependencies = []
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
