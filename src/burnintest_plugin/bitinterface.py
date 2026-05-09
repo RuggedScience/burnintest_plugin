@@ -1,5 +1,6 @@
 import ctypes
 import enum
+import logging
 import time
 from multiprocessing import shared_memory
 from typing import Callable, Optional
@@ -35,6 +36,24 @@ class ErrorSeverity(enum.Enum):
     ERRORSERIOUS = 3
     ERRORCRITICAL = 4
     ERRORTERM = 5
+
+    @staticmethod
+    def from_level(level: int) -> "ErrorSeverity":
+        if level == logging.NOTSET:
+            return ErrorSeverity.ERRORNONE
+        if level == logging.DEBUG:
+            return ErrorSeverity.ERRORINFORMATION
+        if level == logging.INFO:
+            return ErrorSeverity.ERRORINFORMATION
+        if level == logging.WARN:
+            return ErrorSeverity.ERRORWARNING
+        if level == logging.ERROR:
+            return ErrorSeverity.ERRORSERIOUS
+        if level == logging.CRITICAL:
+            return ErrorSeverity.ERRORCRITICAL
+
+        raise ValueError(f"Invalid log value: {level}")
+        
 
 
 class BitInterfaceStructure(ctypes.Structure):
@@ -247,8 +266,8 @@ class BitInterface:
     def set_status(
         self, status: PluginStatus, message: str, wait: bool = False
     ) -> None:
-        if len(message) > PLUGIN_MAXDISPLAYTEXT:
-            raise ValueError("Status message too long")
+        # Clamp message to max length
+        message = message[:PLUGIN_MAXDISPLAYTEXT]
 
         self._wait_for_status()
         self._struct.status = status.value
@@ -258,20 +277,26 @@ class BitInterface:
         if wait:
             self._wait_for_status()
 
-    def set_error(
+    def log_message(
         self, severity: ErrorSeverity, message: str, wait: bool = False
     ) -> None:
-        if len(message) > PLUGIN_MAXERRORTEXT:
-            raise ValueError("Error message too long")
-
-        self._wait_for_error()
+        """Logs a message to the BIT event log.
+        If severity is > ERRORWARNING, the error count will be increased
+        If the message is too long, it will be broken up into multiple entries.
+        """
 
         if severity.value > ErrorSeverity.ERRORWARNING.value:
             self._struct.error_count += 1
 
-        self._struct.error_severity = severity.value
-        self._set_string(self._struct.error_message, message)
-        self._struct.new_error = True
+        index = 0
+        chunk = message[:PLUGIN_MAXERRORTEXT]
+        while len(chunk):
+            self._wait_for_error()
+            self._struct.error_severity = severity.value
+            self._struct.error_message = self._encode_string(chunk)
+            self._struct.new_error = True
+            index += len(chunk)
+            chunk = message[index:index+PLUGIN_MAXERRORTEXT]
 
         if wait:
             self._wait_for_error()
