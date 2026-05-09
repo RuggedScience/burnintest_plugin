@@ -160,20 +160,20 @@ class BitInterface:
         self._struct.error_severity = ErrorSeverity.ERRORNONE.value
         self._struct.status = PluginStatus.PLUGIN_NOSTATUS.value
 
-        self._struct.write_operations = -1
-        self._struct.read_operations = -1
-        self._struct.verify_operations = -1
+        self._struct.write_operations = 0
+        self._struct.read_operations = 0
+        self._struct.verify_operations = 0
 
         self._struct.new_error = False
         self._struct.new_status = False
         self._struct.test_stopped = False
 
-        self._set_string(self._struct.window_title, window_title)
-        self._set_string(self._struct.status_message, "Starting")
-        self._set_string(self._struct.error_message, "")
-        self._set_string(self._struct.write_operations_text, "Write:")
-        self._set_string(self._struct.read_operations_text, "Read:")
-        self._set_string(self._struct.verify_operations_text, "Verify:")
+        self._struct.window_title = self._encode_string(window_title)
+        self._struct.status_message = self._encode_string("Starting")
+        self._struct.error_message = self._encode_string("")
+        self._struct.write_operations_text = self._encode_string("Write:")
+        self._struct.read_operations_text = self._encode_string("Read:")
+        self._struct.verify_operations_text = self._encode_string("Verify:")
         self._struct.new_display_text = True
 
     @property
@@ -202,7 +202,7 @@ class BitInterface:
 
     @write_operations_text.setter
     def write_operations_text(self, value: str) -> None:
-        self._set_string(self._struct.write_operations_text, value)
+        self._struct.write_operations_text = self._encode_string(value)
 
     @property
     def write_operations(self) -> int:
@@ -218,7 +218,7 @@ class BitInterface:
 
     @read_operations_text.setter
     def read_operations_text(self, value: str) -> None:
-        self._set_string(self._struct.read_operations_text, value)
+        self._struct.read_operations_text = self._encode_string(value)
 
     @property
     def read_operations(self) -> int:
@@ -234,7 +234,7 @@ class BitInterface:
 
     @verify_operations_text.setter
     def verify_operations_text(self, value: str) -> None:
-        self._set_string(self._struct.verify_operations_text, value)
+        self._struct.verify_operations_text = self._encode_string(value)
 
     @property
     def verify_operations(self) -> int:
@@ -252,7 +252,7 @@ class BitInterface:
 
         self._wait_for_status()
         self._struct.status = status.value
-        self._set_string(self._struct.status_message, message)
+        self._struct.status_message = self._encode_string(message)
         self._struct.new_status = True
 
         if wait:
@@ -283,11 +283,10 @@ class BitInterface:
         if wait:
             self._wait_for_status()
 
-    def _set_string(self, struct_field, text: str) -> None:
+    def _encode_string(self, text: str):
         """Encodes string to utf-8 and truncates to fit the ctypes char array safely."""
-        max_bytes = len(struct_field) - 1  # Leave 1 byte for null terminator
-        encoded = text.encode("utf-8")[:max_bytes]
-        struct_field.value = encoded
+        return text.encode("utf-8")
+        
 
     def _wait_for_error(self) -> None:
         while self.test_running and self._struct.new_error:
