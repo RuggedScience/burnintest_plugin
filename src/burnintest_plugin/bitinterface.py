@@ -277,8 +277,15 @@ class BitInterface:
             self._wait_for_error()
 
     def set_pretest_complete(self, wait: bool = False) -> None:
-        self._struct.status = PluginStatus.PRE_TEST_PLUGIN_COMPLETED.value
-        self._struct.new_status = True
+        """Marks the pretest as complete and sets the cycle to 1 if not set."""
+
+        if self.cycle <= 0:
+            self.cycle = 1
+
+        # We do this to force BIT to update the counts before cleaning up.
+        # Set "cleanup", and then set complete which will always wait for the previous status.
+        self.set_status(PluginStatus.PLUGIN_CLEANUP, "")
+        self.set_status(PluginStatus.PRE_TEST_PLUGIN_COMPLETED, "")
 
         if wait:
             self._wait_for_status()
