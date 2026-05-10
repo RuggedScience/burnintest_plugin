@@ -53,7 +53,6 @@ class ErrorSeverity(enum.Enum):
             return ErrorSeverity.ERRORCRITICAL
 
         raise ValueError(f"Invalid log value: {level}")
-        
 
 
 class BitInterfaceStructure(ctypes.Structure):
@@ -75,7 +74,7 @@ class BitInterfaceStructure(ctypes.Structure):
 
     read_operations_text: bytes
     read_operations: int
-    
+
     verify_operations_text: bytes
     verify_operations: int
 
@@ -215,6 +214,10 @@ class BitInterface:
     def error_count(self) -> int:
         return self._struct.error_count
 
+    @error_count.setter
+    def error_count(self, count: int):
+        self._struct.error_count = count
+
     @property
     def write_operations_text(self) -> str:
         return self._struct.write_operations_text.decode("utf-8")
@@ -296,7 +299,7 @@ class BitInterface:
             self._struct.error_message = self._encode_string(chunk)
             self._struct.new_error = True
             index += len(chunk)
-            chunk = message[index:index+PLUGIN_MAXERRORTEXT]
+            chunk = message[index : index + PLUGIN_MAXERRORTEXT]
 
         if wait:
             self._wait_for_error()
@@ -318,7 +321,6 @@ class BitInterface:
     def _encode_string(self, text: str):
         """Encodes string to utf-8 and truncates to fit the ctypes char array safely."""
         return text.encode("utf-8")
-        
 
     def _wait_for_error(self) -> None:
         while self.test_running and self._struct.new_error:
